@@ -35,7 +35,6 @@ export default function CodePreview({ schema }) {
         </pre>
       ),
     },
-
     {
       key: "storeRequest",
       label: "Store Request",

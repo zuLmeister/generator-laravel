@@ -5,8 +5,19 @@ function buildValidationRules(schema, isUpdate = false) {
 
   return schema.fields
     .map((field) => {
+      // ===== MANY TO MANY =====
+      if (field.relation?.type === "belongsToMany") {
+        const relationName = toCamelCase(field.relation.model) + "s";
+        const relatedTable = field.relation.model.toLowerCase() + "s";
+
+        return `
+            '${relationName}' => ['${isUpdate ? "sometimes" : "required"}', 'array'],
+            '${relationName}.*' => ['integer', 'exists:${relatedTable},id'],`;
+      }
+
       const rules = [];
 
+      // REQUIRED / SOMETIMES
       if (!isUpdate && field.required) {
         rules.push("required");
       }
@@ -15,6 +26,7 @@ function buildValidationRules(schema, isUpdate = false) {
         rules.push("sometimes");
       }
 
+      // TYPE RULES
       switch (field.type) {
         case "string":
           rules.push("string", "max:255");
@@ -31,8 +43,18 @@ function buildValidationRules(schema, isUpdate = false) {
         case "password":
           rules.push("string", "min:6");
           break;
+        case "foreignId":
+          rules.push("integer");
+          break;
       }
 
+      // ===== BELONGS TO EXISTS =====
+      if (field.relation?.type === "belongsTo") {
+        const relatedTable = field.relation.model.toLowerCase() + "s";
+        rules.push(`exists:${relatedTable},id`);
+      }
+
+      // ===== UNIQUE =====
       if (field.unique) {
         if (isUpdate) {
           rules.push(
@@ -51,11 +73,14 @@ function buildValidationRules(schema, isUpdate = false) {
 export function generateStoreRequest(schema) {
   const modelName = toPascalCase(schema.model);
 
+  const needsRuleImport = schema.fields.some((f) => f.unique);
+
   return `<?php
 
 namespace App\\Http\\Requests\\${modelName};
 
 use Illuminate\\Foundation\\Http\\FormRequest;
+${needsRuleImport ? "use Illuminate\\Validation\\Rule;" : ""}
 
 class Store${modelName}Request extends FormRequest
 {
