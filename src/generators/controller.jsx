@@ -1,93 +1,78 @@
+import { toPascalCase, toCamelCase } from "../utils/naming";
+
 export function generateController(schema) {
-  const model = schema.model;
-  const variable = model.charAt(0).toLowerCase() + model.slice(1);
+  const modelName = toPascalCase(schema.model);
+  const modelVar = toCamelCase(schema.model);
 
   return `<?php
 
 namespace App\\Http\\Controllers\\Api;
 
 use App\\Http\\Controllers\\Controller;
-use App\\Services\\${model}Service;
-use App\\Http\\Requests\\Store${model}Request;
-use App\\Http\\Requests\\Update${model}Request;
-use App\\Http\\Resources\\${model}Resource;
+use App\\Services\\${modelName}Service;
+use App\\Http\\Requests\\Store${modelName}Request;
+use App\\Http\\Requests\\Update${modelName}Request;
+use App\\Http\\Resources\\${modelName}Resource;
 use Illuminate\\Http\\JsonResponse;
 
-class ${model}Controller extends Controller
+class ${modelName}Controller extends Controller
 {
-    protected ${model}Service $service;
+    protected ${modelName}Service $service;
 
-    public function __construct(${model}Service $service)
+    public function __construct(${modelName}Service $service)
     {
         $this->service = $service;
     }
 
-    /**
-     * Display a listing of the resource.
-     */
     public function index(): JsonResponse
     {
         $data = $this->service->getAll();
 
         return response()->json([
             'success' => true,
-            'message' => '${model} list retrieved successfully.',
-            'data' => ${model}Resource::collection($data),
+            'message' => '${modelName} list retrieved successfully.',
+            'data' => ${modelName}Resource::collection($data),
         ]);
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Store${model}Request $request): JsonResponse
+    public function store(Store${modelName}Request $request): JsonResponse
     {
-        $data = $this->service->create($request->validated());
+        $data = $this->service->store($request->validated());
 
         return response()->json([
             'success' => true,
-            'message' => '${model} created successfully.',
-            'data' => new ${model}Resource($data),
+            'message' => '${modelName} created successfully.',
+            'data' => new ${modelName}Resource($data),
         ], 201);
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(int $id): JsonResponse
+    public function show(${modelName} $${modelVar}): JsonResponse
     {
-        $data = $this->service->findById($id);
-
         return response()->json([
             'success' => true,
-            'message' => '${model} retrieved successfully.',
-            'data' => new ${model}Resource($data),
+            'message' => '${modelName} retrieved successfully.',
+            'data' => new ${modelName}Resource($${modelVar}),
         ]);
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Update${model}Request $request, int $id): JsonResponse
+    public function update(Update${modelName}Request $request, ${modelName} $${modelVar}): JsonResponse
     {
-        $data = $this->service->update($id, $request->validated());
+        $data = $this->service->update($${modelVar}, $request->validated());
 
         return response()->json([
             'success' => true,
-            'message' => '${model} updated successfully.',
-            'data' => new ${model}Resource($data),
+            'message' => '${modelName} updated successfully.',
+            'data' => new ${modelName}Resource($data),
         ]);
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(int $id): JsonResponse
+    public function destroy(${modelName} $${modelVar}): JsonResponse
     {
-        $this->service->delete($id);
+        $this->service->delete($${modelVar});
 
         return response()->json([
             'success' => true,
-            'message' => '${model} deleted successfully.',
+            'message' => '${modelName} deleted successfully.',
             'data' => null,
         ]);
     }
