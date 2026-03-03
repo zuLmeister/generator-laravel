@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Input, Button, Select, Checkbox } from "antd";
+import { Input, Button, Checkbox } from "antd";
 import FieldBuilder from "./FieldBuilder";
 
 export default function GeneratorForm({ onGenerate }) {
@@ -8,10 +8,29 @@ export default function GeneratorForm({ onGenerate }) {
   const [softDeletes, setSoftDeletes] = useState(true);
 
   const handleGenerate = () => {
+    if (!model.trim()) {
+      alert("Model name is required!");
+      return;
+    }
+
+    // Transform fields to include relation object for generator
+    const transformedFields = fields.map((f) => {
+      if (!f.relationType) return f;
+
+      return {
+        ...f,
+        relation: {
+          type: f.relationType,
+          model: f.relationModel,
+          onDelete: f.onDelete,
+        },
+      };
+    });
+
     onGenerate({
       model,
       table: model.toLowerCase() + "s",
-      fields,
+      fields: transformedFields,
       options: { softDeletes },
     });
   };
