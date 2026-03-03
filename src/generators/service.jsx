@@ -58,7 +58,7 @@ ${hasPassword ? "use Illuminate\\Support\\Facades\\Hash;" : ""}
 
 class ${modelName}Service
 {
-    public function getPaginated(int $perPage = 10)
+    public function getAll(int $perPage = 10)
     {
         return ${modelName}::with([${eagerRelations}])->paginate($perPage);
     }
