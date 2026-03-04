@@ -5,7 +5,7 @@ function buildValidationRules(schema, isUpdate = false) {
 
   return schema.fields
     .map((field) => {
-      // ===== MANY TO MANY =====
+      // MANY TO MANY
       if (field.relation?.type === "belongsToMany") {
         const relationName = toCamelCase(field.relation.model) + "s";
         const relatedTable = field.relation.model.toLowerCase() + "s";
@@ -18,24 +18,27 @@ function buildValidationRules(schema, isUpdate = false) {
       const rules = [];
 
       // REQUIRED / SOMETIMES
-      if (!isUpdate && field.required) {
-        rules.push("required");
-      }
-
-      if (isUpdate) {
-        rules.push("sometimes");
-      }
+      if (!isUpdate && field.required) rules.push("required");
+      if (isUpdate) rules.push("sometimes");
 
       // TYPE RULES
       switch (field.type) {
         case "string":
-          rules.push("string", "max:255");
+          const maxLength = field.length || 255;
+          rules.push("string", `max:${maxLength}`);
           break;
         case "text":
           rules.push("string");
           break;
         case "integer":
+        case "bigInteger":
+        case "smallInteger":
           rules.push("integer");
+          break;
+        case "float":
+        case "double":
+        case "decimal":
+          rules.push("numeric");
           break;
         case "boolean":
           rules.push("boolean");
@@ -43,18 +46,27 @@ function buildValidationRules(schema, isUpdate = false) {
         case "password":
           rules.push("string", "min:6");
           break;
+        case "enum":
+          if (field.enumValues) {
+            const enums = field.enumValues
+              .split(",")
+              .map((v) => `'${v.trim()}'`)
+              .join(",");
+            rules.push(`in:${enums}`);
+          }
+          break;
         case "foreignId":
           rules.push("integer");
           break;
       }
 
-      // ===== BELONGS TO EXISTS =====
+      // BELONGS TO EXISTS
       if (field.relation?.type === "belongsTo") {
         const relatedTable = field.relation.model.toLowerCase() + "s";
         rules.push(`exists:${relatedTable},id`);
       }
 
-      // ===== UNIQUE =====
+      // UNIQUE
       if (field.unique) {
         if (isUpdate) {
           rules.push(
@@ -72,7 +84,6 @@ function buildValidationRules(schema, isUpdate = false) {
 
 export function generateStoreRequest(schema) {
   const modelName = toPascalCase(schema.model);
-
   const needsRuleImport = schema.fields.some((f) => f.unique);
 
   return `<?php
@@ -101,7 +112,6 @@ class Store${modelName}Request extends FormRequest
 
 export function generateUpdateRequest(schema) {
   const modelName = toPascalCase(schema.model);
-
   const needsRuleImport = schema.fields.some((f) => f.unique);
 
   return `<?php
