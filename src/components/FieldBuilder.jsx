@@ -1,5 +1,25 @@
 import { Button, Input, Select, Checkbox } from "antd";
 
+const FIELD_TYPES = [
+  "string",
+  "text",
+  "integer",
+  "bigInteger",
+  "smallInteger",
+  "boolean",
+  "float",
+  "double",
+  "decimal",
+  "date",
+  "dateTime",
+  "time",
+  "timestamp",
+  "enum",
+  "json",
+  "foreignId",
+  "password",
+];
+
 export default function FieldBuilder({ fields, setFields }) {
   const addField = () => {
     setFields([
@@ -13,18 +33,20 @@ export default function FieldBuilder({ fields, setFields }) {
         relationType: null,
         relationModel: "",
         onDelete: "cascade",
+        enumValues: "",
+        length: null,
+        precision: 8,
+        scale: 2,
+        default: "",
       },
     ]);
   };
 
   const updateField = (index, key, value) => {
     const updated = [...fields];
-
-    // Auto change type if belongsTo
     if (key === "relationType" && value === "belongsTo") {
       updated[index].type = "foreignId";
     }
-
     updated[index][key] = value;
     setFields(updated);
   };
@@ -40,20 +62,11 @@ export default function FieldBuilder({ fields, setFields }) {
               value={field.name}
               onChange={(e) => updateField(index, "name", e.target.value)}
             />
-
             <Select
               value={field.type}
               onChange={(value) => updateField(index, "type", value)}
-              options={[
-                { value: "string" },
-                { value: "text" },
-                { value: "integer" },
-                { value: "boolean" },
-                { value: "password" },
-                { value: "foreignId" },
-              ]}
+              options={FIELD_TYPES.map((type) => ({ value: type }))}
             />
-
             <Select
               value={field.required}
               onChange={(value) => updateField(index, "required", value)}
@@ -62,7 +75,6 @@ export default function FieldBuilder({ fields, setFields }) {
                 { value: false, label: "Optional" },
               ]}
             />
-
             <Select
               placeholder="Relation"
               value={field.relationType}
@@ -76,7 +88,78 @@ export default function FieldBuilder({ fields, setFields }) {
             />
           </div>
 
-          {/* RELATION CONFIG */}
+          {field.type === "string" && (
+            <Input
+              type="number"
+              placeholder="Length (default 255)"
+              value={field.length || ""}
+              onChange={(e) =>
+                updateField(
+                  index,
+                  "length",
+                  e.target.value ? parseInt(e.target.value) : null,
+                )
+              }
+            />
+          )}
+
+          {field.type === "decimal" && (
+            <div className="grid grid-cols-2 gap-4">
+              <Input
+                type="number"
+                placeholder="Precision (default 8)"
+                value={field.precision || ""}
+                onChange={(e) =>
+                  updateField(
+                    index,
+                    "precision",
+                    e.target.value ? parseInt(e.target.value) : 8,
+                  )
+                }
+              />
+              <Input
+                type="number"
+                placeholder="Scale (default 2)"
+                value={field.scale || ""}
+                onChange={(e) =>
+                  updateField(
+                    index,
+                    "scale",
+                    e.target.value ? parseInt(e.target.value) : 2,
+                  )
+                }
+              />
+            </div>
+          )}
+
+          {field.type === "enum" && (
+            <Input
+              placeholder="Enum values (comma separated)"
+              value={field.enumValues || ""}
+              onChange={(e) => updateField(index, "enumValues", e.target.value)}
+            />
+          )}
+
+          {/* DEFAULT VALUE */}
+          {[
+            "string",
+            "text",
+            "integer",
+            "bigInteger",
+            "smallInteger",
+            "float",
+            "double",
+            "decimal",
+            "boolean",
+            "enum",
+          ].includes(field.type) && (
+            <Input
+              placeholder="Default value (optional)"
+              value={field.default || ""}
+              onChange={(e) => updateField(index, "default", e.target.value)}
+            />
+          )}
+
           {field.relationType && (
             <div className="grid grid-cols-3 gap-4">
               <Input
@@ -86,7 +169,6 @@ export default function FieldBuilder({ fields, setFields }) {
                   updateField(index, "relationModel", e.target.value)
                 }
               />
-
               {field.relationType === "belongsTo" && (
                 <Select
                   value={field.onDelete}
@@ -101,7 +183,6 @@ export default function FieldBuilder({ fields, setFields }) {
             </div>
           )}
 
-          {/* OPTIONS */}
           <div className="flex gap-6">
             <Checkbox
               checked={field.unique}
@@ -109,7 +190,6 @@ export default function FieldBuilder({ fields, setFields }) {
             >
               Unique
             </Checkbox>
-
             <Checkbox
               checked={field.index}
               onChange={(e) => updateField(index, "index", e.target.checked)}
